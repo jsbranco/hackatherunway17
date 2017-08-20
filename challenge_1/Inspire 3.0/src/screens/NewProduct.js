@@ -1,7 +1,6 @@
 import React from 'react';
 import {View, Text, Dimensions, ScrollView, TouchableOpacity, Image, Share} from 'react-native';
-import  {Icon, Header, Left, Body, Right, Title, Button, Content, Container, Footer, Switch} from 'native-base';
-import Modal from 'react-native-modal'
+import  {Icon, Header, Left, Body, Right, Title, Button, Content, Container, Badge,Footer, Switch} from 'native-base';
 import Camera from './Camera';
 let {height, width}   = Dimensions.get("window");
 class Home extends React.Component {
@@ -19,10 +18,6 @@ class Home extends React.Component {
         this.setState({...this.state, showUser: !this.state.showUser});
     }
 
-    componentDidMount() {
-        this.props.navigation.setParams({toggleUser: this.toggleUser});
-    }
-
     static navigationOptions = ({navigation})=> {
         return {
             header: null
@@ -30,9 +25,18 @@ class Home extends React.Component {
     }
 
     render() {
+            console.log(this.props.navigation.state.params.tags);
+        let tags;
+        if(this.props.navigation.state.params  &&  this.props.navigation.state.params.tags)
+        {
+            tags=this.props.navigation.state.params.tags.map((tag, key)=>{
+                return  <View key={key} style={{flex:1, margin:5, textWrap:"ellipsis"}}><Badge style={{ backgroundColor: '#333' }}><Text numberOfLines={1} ellipsizeMode="tail" style={{color:"#fff"}}>{tag.replace(/" "/g,"")}</Text></Badge></View>;
+            })
+
+        }
         return <Container >
             <Header>
-                <Left><Button onPress={()=>{this.refs.pages.scrollTo(0)}} transparent><Icon
+                <Left><Button onPress={()=>{this.props.navigation.goBack()}} transparent><Icon
                     name="arrow-back"></Icon></Button></Left>
                 <Body>
                 <Title style={{fontSize:20}}></Title>
@@ -42,7 +46,9 @@ class Home extends React.Component {
             <Content style={{backgroundColor:"#fff", flex:1}}>
                 <View style={{alignItems:"center", flex:1, padding:15, flexDirection:"column"}}>
                     <Image style={{height:250, width:195}} source={{uri:"https://lorempixel.com/350/350/sports/"}}/>
-                    <View></View>
+                    <View style={{flexDirection:"row", alignItems:"center", height:50, flexWrap:"wrap"}}>
+                        {tags}
+                    </View>
                 </View>
             </Content>
             <View
@@ -56,33 +62,4 @@ class Home extends React.Component {
     }
 }
 
-const Collection = ({onClick, label, shared})=> {
-    if (shared) {
-        label = "SHARED COLLECTION";
-    }
-    let maxWidth = width * 0.28;
-    return <View>
-        <TouchableOpacity onPress={onClick}>
-            <View style={{
-            width: maxWidth,
-            height: maxWidth,
-            position: "relative",
-
-            margin: 5
-        }}>
-                <View>
-                    <Image style={{position:"absolute", width:maxWidth, height:maxWidth}}
-                           source={{uri:"https://lorempixel.com/150/150/sports/"}}/>
-                    <View
-                        style={{position:"absolute", backgroundColor:"rgba(0,0,0,0.4)", width:maxWidth, height:maxWidth, justifyContent:"center", alignItems:"center"}}
-                    ><Text style={{color:"#fff", textAlign:"center"}}>{label}</Text></View>
-                    {shared &&
-                    <View style={{justifyContent:"flex-end", alignItems:"flex-end", height:maxWidth, paddingRight:5}}>
-                        <Icon name="md-contacts" style={{color:"#fff"}}/>
-                    </View>}
-                </View>
-            </View>
-        </TouchableOpacity>
-    </View>
-}
 export default Home;

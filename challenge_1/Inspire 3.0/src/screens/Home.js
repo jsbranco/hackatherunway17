@@ -1,33 +1,50 @@
 import React from 'react';
-import {View, Text, Dimensions, ScrollView, TouchableOpacity, Image,RefreshControl} from 'react-native';
+import {View, Text, Dimensions, ScrollView, TouchableOpacity, Image, RefreshControl} from 'react-native';
 import  {Icon, Header, Left, Body, Right, Title, Button, Content, Container, Footer, Switch} from 'native-base';
 import Modal from 'react-native-modal'
 import Camera from './Camera';
+import Searchbar from '../components/Searchbar';
+import Autocomplete from 'react-native-autocomplete-input';
 let {height, width}   = Dimensions.get("window");
 class Home extends React.Component {
     constructor(props) {
         super(props);
         this.selectActivity = this.selectActivity.bind(this);
+        this.query = this.query.bind(this);
         this._onRefresh = this._onRefresh.bind(this);
-        this.state = {activitiesIndex: 0, showUser: false, refreshing:false};
+        this.selectSuggestion = this.selectSuggestion.bind(this);
+        this.state = {activitiesIndex: 0, showUser: false, refreshing: false};
     }
 
     selectActivity(index) {
         this.setState({...this.state, activitiesIndex: index});
     }
-    _onRefresh()
-    {
-        this.setState({...this.state,refreshing:true},()=>{
+
+    _onRefresh() {
+        this.setState({...this.state, refreshing: true}, ()=> {
             // setTimeout(()=>{
             //     this.setState({...this.state,refreshing:false});
             // },2000)
         });
 
     }
+    query(value) {
+        fetch("http://localhost:3000/query?search=" + value, {
+            method: "GET",
+        }).then((res=>res.json())).then(response=> {
+            this.setState({...this.state,  showSuggestions:true, results: response.keys, searchCriteria:value});
+        }).catch(err=> {
+            console.log(err);
+        })
+    }
     toggleUser() {
         this.setState({...this.state, showUser: !this.state.showUser});
     }
+    selectSuggestion(value)
+    {
+        this.setState({...this.state, showSuggestions:false, searchCriteria:value});
 
+    }
     componentDidMount() {
         this.props.navigation.setParams({toggleUser: this.toggleUser});
     }
@@ -39,6 +56,14 @@ class Home extends React.Component {
     }
 
     render() {
+
+        let resultCollections;
+        if(this.state.results){
+            resultCollections = this.state.results.map(function(result){
+                console.log(result.path)
+               return <Collection key={result.key} path={result.path}/>
+            });
+        }
         return <ScrollView pagingEnabled style={{height:height*3}} contentOffset={{x:0,y:height}} ref="pages">
             <Container>
                 <View
@@ -120,7 +145,19 @@ class Home extends React.Component {
                     </View>
                 </View>}
             </Container>
-            <ScrollView style={{flexDirection:"row", width:width}} pagingEnabled horizontal>
+            <ScrollView style={{flexDirection:"row", width:width}} contentOffset={{x:width,y:0}} pagingEnabled
+                        horizontal>
+                <Container >
+                    <Header>
+                        <Body><Searchbar showSuggestions={this.state.showSuggestions} searchCriteria={this.state.searchCriteria} selectSuggestion={this.selectSuggestion} results={this.state.results} query={this.query}/></Body>
+                    </Header>
+                    <Content style={{ zIndex:-1}}>
+                        <View style={{flexDirection:"row",padding:10, width,flexWrap: "wrap", justifyContent:"center"
+}}>
+                            {resultCollections}
+                        </View>
+                    </Content>
+                </Container>
                 <Container >
                     <Header>
                         <Left><Button onPress={()=>{this.refs.pages.scrollTo(0)}} transparent><Icon
@@ -199,36 +236,19 @@ class Home extends React.Component {
                         <View style={{flexDirection:"row", padding:10, width,flexWrap: "wrap", justifyContent:"center"
 }}>
                             <RefreshControl
-                            refreshing={this.state.refreshing}
-                            onRefresh={this._onRefresh.bind(this)}
-                        />
-                            <Collection label="COLLECTION"/>
-                            <Collection shared/>
-                            <Collection label="COLLECTION"/>
-                            <Collection shared/>
-                            <Collection label="COLLECTION"/>
-                            <Collection shared/>
-                            <Collection label="COLLECTION"/>
-                            <Collection shared/>
-                            <Collection label="COLLECTION"/>
-                            <Collection label="COLLECTION"/>
-                            <Collection shared/>
-                            <Collection label="COLLECTION"/>
-                            <Collection shared/>
-                            <Collection label="COLLECTION"/>
-                            <Collection shared/>
-                            <Collection shared/>
-                            <Collection shared/>
-                            <Collection shared/>
+                                refreshing={this.state.refreshing}
+                                onRefresh={this._onRefresh.bind(this)}
+                            />
+                            <Collection label="ALL" cols={2}/>
+                            <Collection label="GARDEN" cols={2}/>
+                            <Collection label="APPAREL" cols={2}/>
+                            <Collection label="BATHROOM" cols={2}/>
+                            <Collection label="KITCHENWARE" cols={2}/>
+                            <Collection label="OTHERS" cols={2}/>
+                            <Collection label="BEDROOM" cols={2}/>
+                            <Collection label="ACCESSORIES" cols={2}/>
                         </View>
                     </Content>
-                    <View
-                        style={{ position:"absolute",height:40, flex:1, bottom:0, width, flexDirection:"row", alignItems:"center",backgroundColor:"rgba(0,0,0,0.8)"}}>
-                        <Text style={{paddingLeft:15, color:"#fff"}}>CREATE MOOD BOARD</Text>
-                        <View style={{alignItems:"flex-end", flex:1}}>
-                            <Switch value={false}/>
-                        </View>
-                    </View>
                 </Container>
             </ScrollView>
             <Camera navigation={this.props.navigation}/>
@@ -236,28 +256,28 @@ class Home extends React.Component {
     }
 }
 
-const Collection = ({onClick, label, shared})=> {
+const Collection = ({onClick, label, shared, cols, path})=> {
     if (shared) {
         label = "SHARED COLLECTION";
     }
-    let maxWidth = width * 0.28;
+    path = path || "https://lorempixel.com/150/150/sports/";
+    let maxSide = cols == 2 ? width / (cols + 0.5) : width / (3 + 0.5);
     return <View>
         <TouchableOpacity onPress={onClick}>
             <View style={{
-            width: maxWidth,
-            height: maxWidth,
+            width: maxSide,
+            height: maxSide,
             position: "relative",
-            
             margin: 5
         }}>
                 <View>
-                    <Image style={{position:"absolute", width:maxWidth, height:maxWidth}}
-                           source={{uri:"https://lorempixel.com/150/150/sports/"}}/>
+                    <Image style={{position:"absolute", width:maxSide, height:maxSide}}
+                           source={{uri:path}}/>
                     <View
-                        style={{position:"absolute", backgroundColor:"rgba(0,0,0,0.4)", width:maxWidth, height:maxWidth, justifyContent:"center", alignItems:"center"}}
+                        style={{position:"absolute", backgroundColor:"rgba(0,0,0,0.4)", width:maxSide, height:maxSide, justifyContent:"center", alignItems:"center"}}
                     ><Text style={{color:"#fff", textAlign:"center"}}>{label}</Text></View>
                     {shared &&
-                    <View style={{justifyContent:"flex-end", alignItems:"flex-end", height:maxWidth, paddingRight:5}}>
+                    <View style={{justifyContent:"flex-end", alignItems:"flex-end", height:maxSide, paddingRight:5}}>
                         <Icon name="md-contacts" style={{color:"#fff"}}/>
                     </View>}
                 </View>
